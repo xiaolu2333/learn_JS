@@ -207,6 +207,128 @@ p.then(null, (e) => setTimeout(console.log, 0, e)); // 3
 ```
 
 
+## （三）Promise 的实例方法
+
+Promise 实例的方法是连接外部同步代码与内部异步代码之间的桥梁。这些方法可以：
+
+1. 访问异步操作返回的数据，处理期约成功和失败的结果
+2. 连续对 Promise 求值
+3. 添加只有期约进入终止状态时才会执行的代码
+
+### 1，Promise.prototype.then()
+
+`Promise.prototype.then()`是为 Promise 实例添加处理程序的主要方法。这个方法接收最多两个可选的参数：
+
+- onResolved 处理程序：在进入 Resolved 状态时执行。
+- onRejected 处理程序：在进入 Rejected 状态时执行。
+
+```JavaScript
+function onResolved(id) {  
+    setTimeout(console.log, 0, id, 'resolved');  
+}  
+  
+function onRejected(id) {  
+    setTimeout(console.log, 0, id, 'rejected');  
+}  
+  
+let p1 = new Promise((resolve, reject) => setTimeout(resolve, 3000));  
+p1.then(  
+    () => onResolved('p1'),  
+    () => onRejected('p1')  
+);    // p1 resolved  
+  
+let p2 = new Promise((resolve, reject) => setTimeout(reject, 3000));  
+p2.then(  
+    () => onResolved('p2'),  
+    () => onRejected('p2')  
+);  // p2 rejected
+```
+
+如果想只提供 onRejected 参数，那就要在 onResolved 参数的位置上传入 `undefined`：
+
+```JavaScript
+function onResolved(id) {  
+    setTimeout(console.log, 0, id, 'resolved');  
+}  
+  
+function onRejected(id) {  
+    setTimeout(console.log, 0, id, 'rejected');  
+}  
+
+let p3 = new Promise((resolve, reject) => setTimeout(resolve, 3000));  
+// 非函数处理程序会被静默忽略，不推荐  
+p3.then('gobbeltygook');  
+let p4 = new Promise((resolve, reject) => setTimeout(reject, 3000));  
+// 不传 onResolved 处理程序的规范写法  
+p4.then(null, () => onRejected('p4'));
+```
+
+`Promise.prototype.then()` 方法返回一个新的 Promise 实例：
+
+```JavaScript
+let p5 = new Promise(() => {});  
+let p6 = p5.then();             // p6 是一个新的 Promise 对象  
+setTimeout(console.log, 0, p5); // -> Promise <pending>  
+setTimeout(console.log, 0, p6); // -> Promise <pending>  
+setTimeout(console.log, 0, p5 === p6);    // -> false
+```
+
+这里的新 Promise 实例 p6 基于 onResovled 处理程序的返回值构建，即该处理程序的返回值会通过 `Promise.resolve()` 包装器来生成新的 Promise。
+如果没有提供这个处理程序，则 `Promise.resolve()` 的包装结果就是上一个 Promise resolved 之后的值。
+若调用 `then()` 时不传 onResovled 处理程序，则原样向后传 Promise 实例：
+
+```JavaScript
+let p7 = Promise.resolve("foo");  
+let p8 = p7.then();  
+setTimeout(console.log, 0, p8); // -> Promise { "foo" }  
+// // 等价于一下三种写法  
+// let p8 = p7.then(() => undefined);  
+// let p8 = p7.then(() => {});  
+// let p8 = p7.then(() => Promise.resolve());
+```
+
+- 如果没有显式的返回语句，则 `Promise.resolve()` 会包装出默认的返回值 undefined。
+  如果 onResovled 有显式的返回值，则 `Promise.resolve()` 会包装这个值：
+
+```JavaScript
+let p9 =  Promise.resolve('foo');  
+let p10 = p9.then(() => 'bar');  
+let p11 = p9.then(() => Promise.resolve('bar'));  
+setTimeout(console.log, 0, p10); // -> Promise <resolved>: bar  
+setTimeout(console.log, 0, p11); // -> Promise <resolved>: bar
+```
+
+如果 onResovled 抛出异常会返回 rejected Promise：
+
+```JavaScript
+let p9 =  Promise.resolve('foo'); 
+let p12 = p9.then(() => { throw 'baz'; });  
+// Uncaught (in promise) baz  
+setTimeout(console.log, 0, p12);  
+/* 输出  
+[UnhandledPromiseRejection: This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with  
+ .catch(). The promise rejected with the reason "baz".] {  code: 'ERR_UNHANDLED_REJECTION'}  
+*/
+```
+
+返回错误值不会触发上面的 reject 行为，而是同会把错误对象包装在一个 rejected Promise 中：
+
+```JavaScript
+let p13 = p9.then(() => Error('qux'));  
+setTimeout(console.log, 0, p13); // Promise <resolved>: Error: qux
+```
+
+onRejected 处理程序返回的值也会被 `Promise.resolve()` 包装。因为 onRejected 处理程序的任务就是捕获异步错误，所以它在捕获错误后不抛出异常而是同样返回一个 rejected Promise：
+
+```JavaScript
+let p14 = Promise.reject('foo')  
+let p15 = p14.then(null, () => Error('qux'));  
+setTimeout(console.log, 0, p15); // Promise <resolved>: Error: qux
+```
+
+> [7——Promise.then方法](1——JavaScript语言/11——异步编程/程序文件/7——Promise.then方法.js)
+>
+
 
 # 三，异步函数
 
