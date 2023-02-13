@@ -87,6 +87,127 @@ double(3); // 6（大约 1000 毫秒之后）
 
 # 二，Promise
 
+一个 `Promise` 对象代表一个在这个 promise 被创建出来时不一定已知值的状态代理。
+它让你能够把异步操作最终的成功返回值或者失败原因和相应的处理程序关联起来。
+这样使得异步方法可以像同步方法那样返回值：异步方法并不会立即返回最终的值，而是会返回一个 _promise_，以便在未来某个时候把值交给使用者。
+
+## （一）Promise 简史
+
+## （二）Promise 基础
+
+ECMAScript 6 新增的引用类型 `Promise`，可以通过 `new` 操作符来实例化：
+
+```JavaScript
+let p = new Promise(() => {}); 
+
+setTimeout(console.log, 0, p); // Promise
+```
+
+- 创建新期约时需要传入执行器（executor）函数作为参数。这里使用了一个空函数对象。
+  setTimeout 接受了三个参数，这里会立即打印 Promise 实例。
+
+1. function，在到期时间 (`delay`毫秒) 之后执行的[函数](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Function)。
+2. delay，延迟的毫秒数 (一秒等于 1000 毫秒)。实际的延迟时间可能会比期待的 (delay 毫秒数) 值长，原因请查看[实际延时比设定值更久的原因：最小延迟时间](https://developer.mozilla.org/zh-CN/docs/Web/API/setTimeout#%E5%AE%9E%E9%99%85%E5%BB%B6%E6%97%B6%E6%AF%94%E8%AE%BE%E5%AE%9A%E5%80%BC%E6%9B%B4%E4%B9%85%E7%9A%84%E5%8E%9F%E5%9B%A0%EF%BC%9A%E6%9C%80%E5%B0%8F%E5%BB%B6%E8%BF%9F%E6%97%B6%E9%97%B4)。
+3. arg1, ..., argN，一旦定时器到期，它们会作为参数传递给 function。
+
+### 1，状态机
+
+期约是一个有状态的对象，可能处于如下 3 种状态之一：
+
+1. 待定（pending）：尚未开始或者正在执行中
+2. 解决（resolved）：已经成功完成，就会有一个私有的内部**解决值（value）**
+3. 拒绝（rejected）：没有成功完成，就会有一个私有的内部**拒绝理由（reason）**
+
+待定是 Promise 的最初始状态。在待定状态下，Promise 可以落定（settled）为代表成功的解决状态，或者代表失败的拒绝状态。
+无论落定为哪种状态都是不可逆的。只要从待定转换为兑现或拒绝，期约的状态就不再改变。
+
+重要的是，Promise 的状态是私有的，不能直接通过 JavaScript 检测到。这主要是为了避免根据读取到的 Promise 状态以同步方式处理期约对象。
+另外，Promise 的状态也不能被外部 JavaScript 代码修改。这与不能读取该状态的原因是一样的：**Promise 故意将异步行为封装起来，从而隔离外部的同步代码。**
+
+value 和 reason 都是包含原始值或对象的不可修改的引用。二者都是可选的，而且默认值为 `undefined`。
+
+### 2，通过执行器函数控制 Promise 状态
+
+控制 Promise 状态的转换是通过调用它的两个函数参数实现的：
+
+- `resolve()` 会把状态切换为解决。
+- `reject()` 会把状态切换为拒绝。
+
+```JavaScript
+let p1 = new Promise((resolve, reject) => resolve()); setTimeout(console.log, 0, p1); // Promise <resolved>
+
+let p2 = new Promise((resolve, reject) => reject()); setTimeout(console.log, 0, p2); // Promise  <rejected>
+```
+
+- 这里为在初始化期约时，就用执行器函数已经改变了每个  Promise 的状态。
+- 这里的执行器函数是同步执行的，这是因为执行器函数是 Promise 的初始化程序的一部分。
+
+通常会使用 `setTimeout` 通过延迟调用的方式来推迟状态的切换动作：
+
+```JavaScript
+// 使用 `setTimeout` 
+let p = new Promise((resolve, reject) => setTimeout(resolve, 1000));
+
+// 在 console.log 打印期约实例的时候，还不会执行超时回调（即 resolve()） 
+setTimeout(console.log, 0, p); // Promise <pending>
+```
+
+如果在调用一个执行器函数后继续修改状态会静默失败：
+
+```JavaScript
+let p = new Promise((resolve, reject) => { 
+	resolve(); 
+	reject(); // 没有效果 
+}); 
+
+setTimeout(console.log, 0, p); // Promise <resolved> 
+```
+
+### 3，Promise.resolve()
+
+Promise 并非一开始就必须处于待定状态，然后通过执行器函数才能转换为落定状态。通过调用 `Promise.resolve()` 静态方法，可以实例化一个解决的期约：
+
+```JavaScript
+let p1 = new Promise((resolve, reject) => resolve()); 
+等价于：
+let p2 = Promise.resolve();
+```
+
+`Promise.resolve()` 会返回一个解决值，即它的第一个参数：
+
+```JavaScript
+setTimeout(console.log, 0, Promise.resolve()); // Promise : undefined 
+
+setTimeout(console.log, 0, Promise.resolve(3)); // Promise : 3
+
+// 多余的参数会忽略 
+setTimeout(console.log, 0, Promise.resolve(4, 5, 6)); // Promise : 4
+```
+
+- 这个静态方法可以把任何值都转换为一个 Promise。
+
+### 4，Promise.reject()
+
+与 Promise.resolve()类似，`Promise.reject()` 会实例化一个拒绝的期约并抛出一个异步错误：
+
+- 这个错误不能通过 `try/catch` 捕获，而只能通过拒绝处理程序捕获。
+
+```JavaScript
+let p1 = new Promise((resolve, reject) => reject()); 
+等价于：
+let p2 = Promise.reject();
+```
+
+`Promise.reject()` 会返回一个拒绝理由，即它的第一个参数：
+
+```JavaScript
+let p = Promise.reject(3); 
+setTimeout(console.log, 0, p); // Promise : 3 
+p.then(null, (e) => setTimeout(console.log, 0, e)); // 3
+```
+
+
+
 # 三，异步函数
 
 ## （一）
