@@ -68,22 +68,17 @@ double(3); // 6（大约 1000 毫秒之后）
 
 > [3——以往的异步编程模式：返回异步值](1——JavaScript语言/11——异步编程/程序文件/3——以往的异步编程模式：返回异步值.js)
 
-
-
 ### 2，失败处理
 
 异步操作的失败处理在回调模型中也要考虑，因此自然就出现了成功回调和失败回调。
 
 > [4——以往的异步编程模式：失败处理.](1——JavaScript语言/11——异步编程/程序文件/4——以往的异步编程模式：失败处理.js)
 
-
-
 ### 3，嵌套异步回调
 
 如果异步返值又依赖另一个异步返回值，那么回调的情况还会进一步变复杂。在实际的代码中，这就要求嵌套回调。
 
 > [5——以往的异步编程模式：嵌套异步回调](1——JavaScript语言/11——异步编程/程序文件/5——以往的异步编程模式：嵌套异步回调.js)
-
 
 # 二，Promise
 
@@ -206,7 +201,6 @@ setTimeout(console.log, 0, p); // Promise : 3
 p.then(null, (e) => setTimeout(console.log, 0, e)); // 3
 ```
 
-
 ## （三）Promise 的实例方法
 
 Promise 实例的方法是连接外部同步代码与内部异步代码之间的桥梁。这些方法可以：
@@ -328,7 +322,6 @@ setTimeout(console.log, 0, p15); // Promise <resolved>: Error: qux
 
 > [7——Promise.then方法](1——JavaScript语言/11——异步编程/程序文件/7——Promise.then方法.js)
 
-
 ### 2，Promise.prototype.catch()
 
 `Promise.prototype.catch()` 方法用于给 Promise 添加拒绝处理程序。这个方法只接收一个参数：
@@ -360,6 +353,42 @@ setTimeout(console.log, 0, p1 === p2); // false
 
 > [8——Promise.catch()方法](1——JavaScript语言/11——异步编程/程序文件/8——Promise.catch()方法.js)
 
+
+🌰：一个网络请求：
+
+```JavaScript
+function fetchData(url) {  
+  return new Promise((resolve, reject) => {  
+    fetch(url)  
+      .then(response => response.json())  
+      .then(data => {  
+        resolve(data);  
+      })  
+      .catch(error => {  
+        reject(error);  
+      });  
+  });  
+}  
+  
+  
+// fetchData('https://jsonplaceholder.com/posts')  
+fetchData('https://jsonplaceholder.typicode.com/posts')  
+  .then(data => {  
+    console.log(data);  
+  })  
+  .catch(error => {  
+    console.error(error);  
+  });
+```
+
+首先，我们封装一个`fetchData`函数，它接收一个URL作为参数并返回一个Promise对象。
+
+在函数内部，我们使用`fetch`请求数据：
+
+1. 在请求成功时使用`resolve`方法，显示地返回响应的数据，并将作为参数传递给下一个.then()方法。
+2. 如果请求失败，我们使用调用`reject`方法将错误作为参数传递给`.catch()`方法。
+
+最后，我们可以在任意一个JavaScript文件中调用`fetchData`函数，并使用`.then()`和`.catch()`方法处理请求结果。
 
 # 三，异步函数
 
