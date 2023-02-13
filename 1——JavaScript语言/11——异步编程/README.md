@@ -403,7 +403,132 @@ fetchData('https://jsonplaceholder.typicode.com/posts')
 
 # 三，异步函数
 
-## （一）
+使用 Promise 的返回值：
+
+```JavaScript
+// 这个Promise在 1000 毫秒之后解决为数值 3
+let p = new Promise((resolve, reject) => setTimeout(resolve, 1000, 3));  
+  
+// 如果程序中的其他代码要在这个值可用时访问它，则需要写一个解决处理程序：  
+p.then((x) => console.log(x)); // -> 3
+```
+
+这其实是很不方便的，因为其他代码都必须塞到期约处理程序中，ES8 为此提供了 `async/await` 关键字来解决利用异步结构组织代码的问题。
+
+## （一）异步函数
+
+### 1，async
+
+`async` 关键字用于声明异步函数：
+
+```JavaScript
+// 用在函数声明  
+async function foo() {  
+}  
+  
+// 用在函数表达式  
+let bar = async function () {  
+};  
+  
+// 用在箭头函数  
+let baz = async () => {  
+};  
+  
+class Qux {  
+    // 用在对象的方法  
+    async qux() {  
+    }}
+```
+
+但总体上其代码仍然是同步求值的：
+
+```JavaScript
+async function foo() { 
+	console.log(1); 
+} 
+foo(); 
+
+console.log(2); 
+
+// -> 1 
+// -> 2
+```
+
+异步函数一般直接返回 Promise 对象。如果使用 `return` 关键字返回了普通值（如果没有 `return` 则会返回 undefined），这个值会被 `Promise.resolve()` 包装成一个 Promise 对象：
+
+```JavaScript
+async function foo() {  
+    console.log(1);  
+    return 3;  
+    // 直接返回一个 Promise 对象也是可以的：  
+    // return Promise.resolve(3);  
+}  
+// 给返回的期约添加一个解决处理程序  
+foo().then(console.log);  
+console.log(2);  
+/*输出  
+1  
+2  
+3  
+* */
+```
+
+实际上异步函数的返回值期待的是一个实现 thenable 接口的对象：
+
+- 如果返回的是实现 thenable 接口的对象，则这个对象可以由提供给 `then()` 的处理程序“解包”。
+- 如果不是，则返回值就被当作已经解决的 Promise。
+
+```JavaScript
+// 返回一个原始值  
+async function foo() {  
+    return 'foo';  
+}  
+foo().then(console.log); // -> foo  
+  
+// 返回一个没有实现 thenable 接口的对象  
+async function bar() {  
+    return ['bar'];  
+}  
+bar().then(console.log); // -> ['bar']  
+  
+// 返回一个实现了 thenable 接口的非期约对象  
+async function baz() {  
+    const thenable = {  
+        then(callback) {  
+            callback('baz');  
+        }  
+    };  
+    return thenable;  
+}  
+baz().then(console.log); // -> baz  
+  
+// 返回一个期约  
+async function qux() {  
+    return Promise.resolve('qux');  
+}  
+qux().then(console.log); // -> qux
+```
+
+与在 Promise 的处理程序中一样，在异步函数中抛出错误会返回拒绝的Promise：
+
+```JavaScript
+async function foo() {  
+    console.log(1);  
+    // 抛出一个错误  
+    throw 3;  
+    // 拒绝Promise的错误不会被异步函数捕获：  
+    // Promise.reject(3);  
+}  
+// 就要给返回的 Promise 添加一个拒绝处理程序来捕获错误并处理错去  
+foo().catch(console.log);  
+console.log(2);  
+// /*输出  
+// 1  
+// 2  
+// 3  
+// * */
+```
+
 
 ## （二）
 
