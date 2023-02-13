@@ -327,7 +327,38 @@ setTimeout(console.log, 0, p15); // Promise <resolved>: Error: qux
 ```
 
 > [7——Promise.then方法](1——JavaScript语言/11——异步编程/程序文件/7——Promise.then方法.js)
->
+
+
+### 2，Promise.prototype.catch()
+
+`Promise.prototype.catch()` 方法用于给 Promise 添加拒绝处理程序。这个方法只接收一个参数：
+
+- onRejected 处理程序。
+
+```JavaScript
+let p = Promise.reject();  
+let onRejected = function (e) {  
+    setTimeout(console.log, 0, 'rejected');  
+};  
+  
+// 这两种添加拒绝处理程序的方式是一样的：  
+p.then(null, onRejected); // rejected  
+p.catch(onRejected); // rejected
+```
+
+`Promise.prototype.catch()` 同样返回一个新的 Promise 实例：
+
+- 返回 Promise 实例的行为与 `Promise.prototype.then()` 的 onRejected 处理程序是一样的。
+
+```JavaScript
+let p1 = new Promise(() => {});  
+let p2 = p1.catch();  
+setTimeout(console.log, 0, p1); // Promise <pending>  
+setTimeout(console.log, 0, p2); // Promise <pending>  
+setTimeout(console.log, 0, p1 === p2); // false
+```
+
+> [8——Promise.catch()方法](1——JavaScript语言/11——异步编程/程序文件/8——Promise.catch()方法.js)
 
 
 # 三，异步函数
