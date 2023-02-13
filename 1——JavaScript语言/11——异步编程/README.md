@@ -390,6 +390,17 @@ fetchData('https://jsonplaceholder.typicode.com/posts')
 
 最后，我们可以在任意一个JavaScript文件中调用`fetchData`函数，并使用`.then()`和`.catch()`方法处理请求结果。
 
+
+
+### 3，Promise.prototype.finally()
+
+`Promise.prototype.finally()` 方法用于给期约添加 onFinally 处理程序，在 Promise 转换为解决或拒绝状态时都会执行。
+这个方法可以避免 onResolved 和 onRejected 处理程序中出现冗余代码。但 onFinally 处理程序没有办法知道期约的状态是解决还是拒绝，所以这个方法主要用 于添加清理代码。
+
+> [9——Promise.finally()方法](1——JavaScript语言/11——异步编程/程序文件/9——Promise.finally()方法.js)
+
+
+
 # 三，异步函数
 
 ## （一）
